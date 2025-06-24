@@ -1,0 +1,505 @@
+<!-- Advanced Student-Teacher Booking Appointment System with Firebase and Admin Panel -->
+<!-- Features: User Roles, Login, Booking, Status Approval, Admin Control, Firestore Integration -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking System</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #00c6ff, #0072ff);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: background 0.3s ease;
+    }
+
+    body.dark-mode {
+      background: #121212;
+      color: #f0f0f0;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.5s ease-in-out;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark-mode .container {
+      background: #1e1e1e;
+      color: #f0f0f0;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      font-size: 30px;
+      text-align: center;
+      color: #222;
+      margin-bottom: 30px;
+    }
+
+    body.dark-mode h2,
+    body.dark-mode h3,
+    body.dark-mode h4,
+    body.dark-mode h5 {
+      color: #f0f0f0;
+    }
+
+    h3, h4, h5 {
+      color: #444;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    input, select {
+  width: 100%;
+  padding: 14px 16px;
+  margin: 10px 0 20px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  transition: 0.3s;
+  background-color: #fff;
+  color: #000;
+}
+
+body.dark-mode input,
+body.dark-mode select {
+  background-color: #333;
+  color: #f0f0f0;
+  border: 1px solid #555;
+}
+
+    button {
+  width: 100%;
+  padding: 16px 20px;
+  margin-top: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00c6ff, #0072ff);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+    button:hover {
+      background: linear-gradient(135deg, #0072ff, #005bbb);
+      transform: translateY(-2px);
+    }
+
+    .card {
+  background-color: #f0f4f8;
+  padding: 16px 20px;
+  margin: 12px 0;
+  border-left: 6px solid #0072ff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease, background 0.3s, color 0.3s;
+}
+
+body.dark-mode .card {
+  background-color: #2a2a2a;
+  color: #f0f0f0;
+  border-left-color: #00c6ff;
+}
+
+    .card:hover {
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #welcome {
+  font-size: 20px;
+  text-align: center;
+  color: #333;
+  margin-top: 20px;
+}
+
+body.dark-mode #welcome {
+  color: #f0f0f0;
+}
+
+    .logout-btn {
+      background-color: #f44336;
+      margin-top: 20px;
+      transition: 0.3s ease;
+    }
+
+    .logout-btn:hover {
+      background-color: #d32f2f;
+    }
+.toggle-theme {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  background: none;
+  color: #fff;
+  font-size: 24px;
+  border: none;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;             /* ensure it can render ::before */
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s;
+}
+
+.toggle-theme::before {
+  content: '🌙'; /* Moon icon */
+  font-size: 24px;
+}
+
+
+.toggle-theme:hover {
+  transform: scale(1.1);
+}
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #323232;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: none;
+      z-index: 1000;
+      animation: fadein 0.3s, fadeout 0.5s 2.5s;
+    }
+
+    @keyframes fadein {
+      from { bottom: 10px; opacity: 0; }
+      to { bottom: 30px; opacity: 1; }
+    }
+    @keyframes fadeout {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    @media (max-width: 768px) {
+  .container {
+    padding: 20px;
+    width: 95%;
+  }
+  h2, h3, h4, h5 {
+    font-size: 20px;
+  }
+  input, select, button {
+    font-size: 16px;
+  }
+  .toggle-theme {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 16px;
+  }
+  button {
+    padding: 12px 16px;
+    font-size: 15px;
+  }
+  .card {
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+  .toast {
+    font-size: 14px;
+    padding: 10px 16px;
+  }
+}
+    
+  </style>
+</head>
+<body>
+<button class="toggle-theme" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode"></button>
+<div class="toast" id="toast"></div>
+<div class="container">
+  <h2>📚 Student-Teacher Appointment System</h2>
+  <input type="email" id="email" placeholder="📧 Enter your email">
+  <input type="password" id="password" placeholder="🔒 Enter your password">
+  <select id="role">
+    <option value="student">Student</option>
+    <option value="teacher">Teacher</option>
+    <option value="admin">Admin</option>
+  </select>
+  <button onclick="register()">Register</button>
+  <button onclick="login()">Login</button>
+
+  <div id="dashboard" class="hidden">
+    <h3 id="welcome"></h3>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+
+    <div id="studentPanel" class="hidden">
+      <h4>📅 Book Appointment</h4>
+      <input type="email" id="teacherEmail" placeholder="Enter Teacher's Email">
+      <input type="date" id="date">
+      <input type="time" id="time">
+      <button onclick="bookAppointment()">Book</button>
+      <h4>📄 My Bookings</h4>
+      <div id="studentBookings"></div>
+    </div>
+
+    <div id="teacherPanel" class="hidden">
+      <h4>📥 Pending Appointments</h4>
+      <div id="teacherAppointments"></div>
+    </div>
+
+    <div id="adminPanel" class="hidden">
+      <h4>🛠️ Admin Dashboard</h4>
+      <h5>👥 All Users</h5>
+      <div id="adminUsers"></div>
+      <h5>📊 All Appointments</h5>
+      <div id="adminAppointments"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Firebase config and logic here (already included in your working code)
+</script>
+</body>
+</html>
+
+
+<script>
+ const firebaseConfig = {
+  apiKey: "AIzaSyA3u0Rnq4kJW923zVMSzHzyM3seYyAy7wI",
+  authDomain: "student-teacher-booking-f67c8.firebaseapp.com",
+  projectId: "student-teacher-booking-f67c8",
+  storageBucket: "student-teacher-booking-f67c8.firebasestorage.app",
+  messagingSenderId: "928506645379",
+  appId: "1:928506645379:web:56d1fb4bc32322bd9004b6",
+  measurementId: "G-T1K42XBVM7"
+};
+ firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  async function register() {
+    const email = emailEl.value;
+    const password = passwordEl.value;
+    const role = roleEl.value;
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      await db.collection("users").doc(userCredential.user.uid).set({
+        email,
+        role,
+        approved: role === "teacher" ? false : true
+      });
+      showToast("✅ Registered successfully!");
+      currentUserRole = role;
+      showDashboard(email);
+    } catch (e) {
+      showToast("Registration failed: " + e.message);
+    }
+  }
+
+    async function login() {
+    const email = emailEl.value;
+    const password = passwordEl.value;
+    try {
+      const userCredential = await auth.signInWithEmailAndPassword(email, password);
+      const uid = userCredential.user.uid;
+      const doc = await db.collection("users").doc(uid).get();
+      if (!doc.exists) {
+        showToast("⚠️ Your user account exists, but no role is assigned in Firestore.");
+        return;
+      }
+      if (doc.data().role === "teacher" && doc.data().approved === false) {
+        showToast("⛔ Your account is pending admin approval.");
+        return;
+      }
+      currentUserRole = doc.data().role;
+      showToast("✅ Logged in successfully!");
+      showDashboard(email);
+    } catch (e) {
+      showToast("Login failed: " + e.message);
+    }
+  }
+
+  function logout() {
+    auth.signOut().then(() => {
+      location.reload();
+    });
+  }
+   async function approveTeacher(uid) {
+    await db.collection("users").doc(uid).update({ approved: true });
+    showToast("✅ Teacher approved.");
+    loadAllUsers();
+  }
+
+  async function rejectTeacher(uid) {
+    await db.collection("users").doc(uid).delete();
+    showToast("❌ Teacher rejected and removed.");
+    loadAllUsers();
+  }
+
+  function showDashboard(email) {
+    document.getElementById("dashboard").classList.remove("hidden");
+    document.getElementById("welcome").innerText = `Welcome ${email} (${currentUserRole})`;
+
+    if (currentUserRole === "student") {
+      document.getElementById("studentPanel").classList.remove("hidden");
+      loadStudentBookings();
+    } else if (currentUserRole === "teacher") {
+      document.getElementById("teacherPanel").classList.remove("hidden");
+      loadTeacherAppointments();
+    } else if (currentUserRole === "admin") {
+      document.getElementById("adminPanel").classList.remove("hidden");
+      loadAllUsers();
+      loadAllAppointments();
+    }
+  }
+
+  async function bookAppointment() {
+    const student = auth.currentUser.email;
+    const teacher = document.getElementById("teacherEmail").value;
+    const date = document.getElementById("date").value;
+    const time = document.getElementById("time").value;
+    await db.collection("appointments").add({ student, teacher, date, time, status: "pending" });
+    alert("✅ Appointment requested!");
+    loadStudentBookings();
+  }
+
+  async function loadStudentBookings() {
+    const email = auth.currentUser.email;
+    const snapshot = await db.collection("appointments").where("student", "==", email).get();
+    const container = document.getElementById("studentBookings");
+    container.innerHTML = "";
+    snapshot.forEach(doc => {
+      const a = doc.data();
+      container.innerHTML += `<div class='card'>Teacher: ${a.teacher}<br>Date: ${a.date}<br>Time: ${a.time}<br>Status: ${a.status}</div>`;
+    });
+  }
+
+  async function loadTeacherAppointments() {
+    const email = auth.currentUser.email;
+    const snapshot = await db.collection("appointments").where("teacher", "==", email).where("status", "==", "pending").get();
+    const container = document.getElementById("teacherAppointments");
+    container.innerHTML = "";
+    snapshot.forEach(doc => {
+      const a = doc.data();
+      container.innerHTML += `<div class='card'>Student: ${a.student}<br>Date: ${a.date}<br>Time: ${a.time}<br>
+      <button onclick="updateStatus('${doc.id}', 'approved')">Approve</button>
+      <button onclick="updateStatus('${doc.id}', 'rejected')">Reject</button></div>`;
+    });
+  }
+
+  async function updateStatus(id, status) {
+    await db.collection("appointments").doc(id).update({ status });
+    loadTeacherAppointments();
+  }
+
+async function loadAllUsers() {
+  const snapshot = await db.collection("users").get();
+  
+  const container = document.getElementById("adminUsers");
+  container.innerHTML = "";
+
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    let actions = "";
+
+    // Show approve/reject buttons only for unapproved teachers
+    if (data.role === "teacher" && data.approved === false) {
+      actions = `
+        <button onclick="approveTeacher('${doc.id}')">Approve</button>
+        <button onclick="rejectTeacher('${doc.id}')">Reject</button>`;
+    }
+
+    container.innerHTML += `
+      <div class='card'>
+        ${data.email} - ${data.role} ${data.approved === false ? '(Pending)' : ''}
+        <br>${actions}
+      </div>`;
+  });
+}
+
+async function approveTeacher(uid) {
+  await db.collection("users").doc(uid).update({ approved: true });
+  showToast("✅ Teacher approved.");
+  loadAllUsers();
+}
+
+async function rejectTeacher(uid) {
+  await db.collection("users").doc(uid).delete();
+  showToast("❌ Teacher rejected and removed.");
+  loadAllUsers();
+}
+
+
+  async function loadAllAppointments() {
+    const snapshot = await db.collection("appointments").get();
+    const container = document.getElementById("adminAppointments");
+    container.innerHTML = "";
+    snapshot.forEach(doc => {
+      const a = doc.data();
+      container.innerHTML += `<div class='card'>Student: ${a.student} | Teacher: ${a.teacher} <br>Date: ${a.date} | Time: ${a.time} | Status: ${a.status}</div>`;
+    });
+  }
+    function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.style.display = "block";
+    setTimeout(() => { toast.style.display = "none"; }, 3000);
+  }
+
+  function toggleDarkMode() {
+    document.body.classList.toggle("dark-mode");
+  }
+
+
+  const emailEl = document.getElementById("email");
+  const passwordEl = document.getElementById("password");
+  const roleEl = document.getElementById("role");
+  const dashboard = document.getElementById("dashboard");
+  const welcome = document.getElementById("welcome");
+  const studentPanel = document.getElementById("studentPanel");
+  const teacherPanel = document.getElementById("teacherPanel");
+  const adminPanel = document.getElementById("adminPanel");
+  const studentBookings = document.getElementById("studentBookings");
+  const teacherAppointments = document.getElementById("teacherAppointments");
+  const adminUsers = document.getElementById("adminUsers");
+  const adminAppointments = document.getElementById("adminAppointments");
+</script>
+</body>
+</html>
+
